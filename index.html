@@ -1,11 +1,346 @@
-<h1> Index Page Search </h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Good Things Log</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            width: 100%;
+            max-width: 420px;
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .text-gradient {
+            background-image: linear-gradient(to right, #4c51bf, #667eea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .entry-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            background-color: #f9fafb;
+            margin-bottom: 0.5rem;
+        }
+        .scroll-container {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .insights-section {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        #add-entry-btn, #add-goal-btn {
+            background-image: linear-gradient(to right, #667eea, #4c51bf);
+            transition: all 0.2s ease-in-out;
+        }
+        #add-entry-btn:hover, #add-goal-btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold mb-2 text-center text-gradient">Good Things Log</h1>
+        <p class="text-gray-500 text-center mb-6">Log things that felt good to see your progress.</p>
+        
+        <div id="app-content">
+            <!-- Habit Log Section -->
+            <div class="flex flex-col space-y-3">
+                <input type="text" id="entry-input" placeholder="What felt good today?" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <div class="flex space-x-2">
+                    <input type="time" id="time-start-input" class="flex-1 p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <input type="time" id="time-end-input" class="flex-1 p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button id="add-entry-btn" class="p-3 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200">
+                    Add Log
+                </button>
+            </div>
+            
+            <div class="mt-8">
+                <h2 class="text-xl font-semibold mb-3 text-gray-800">Your Logs</h2>
+                <div id="entry-list" class="scroll-container">
+                    <p class="text-center text-gray-500">No logs yet. Add one above!</p>
+                </div>
+            </div>
 
-<h2>Cantonese Schools and churches:</h2>
+            <div class="insights-section">
+                <h2 class="text-xl font-semibold mb-3 text-gray-800">Weekly Insights</h2>
+                <div id="insights-content">
+                    <p class="text-gray-500">Log some entries to see your insights here.</p>
+                </div>
+            </div>
 
-<div>
-<iframe src="https://storage.googleapis.com/cantonese-locator/index.html"
-  width="100%" height="100%"
-  style="border:0;"
-  loading="lazy">
-</iframe>
-</div>
+            <!-- Goals Section -->
+            <div class="insights-section">
+                <h2 class="text-xl font-semibold mb-3 text-gray-800">My Goals</h2>
+                <div class="flex flex-col space-y-3 mb-4">
+                    <input type="text" id="goal-input" placeholder="e.g., Run 3 times per week" class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <button id="add-goal-btn" class="p-3 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200">
+                        Add Goal
+                    </button>
+                </div>
+                <div id="goals-list" class="scroll-container">
+                    <p class="text-center text-gray-500">No goals set yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom modal for alerts -->
+        <div id="alert-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
+            <div class="bg-white rounded-xl p-6 shadow-xl max-w-sm w-full">
+                <h3 id="alert-title" class="text-lg font-bold mb-2 text-gray-800"></h3>
+                <p id="alert-message" class="text-gray-600 mb-4"></p>
+                <button id="alert-close-btn" class="w-full p-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const entryInput = document.getElementById('entry-input');
+        const timeStartInput = document.getElementById('time-start-input');
+        const timeEndInput = document.getElementById('time-end-input');
+        const addEntryBtn = document.getElementById('add-entry-btn');
+        const entryList = document.getElementById('entry-list');
+        const insightsContent = document.getElementById('insights-content');
+        const goalInput = document.getElementById('goal-input');
+        const addGoalBtn = document.getElementById('add-goal-btn');
+        const goalsList = document.getElementById('goals-list');
+
+        const alertModal = document.getElementById('alert-modal');
+        const alertTitle = document.getElementById('alert-title');
+        const alertMessage = document.getElementById('alert-message');
+        const alertCloseBtn = document.getElementById('alert-close-btn');
+
+        // Custom alert function
+        const showAlert = (title, message) => {
+            alertTitle.textContent = title;
+            alertMessage.textContent = message;
+            alertModal.classList.remove('hidden');
+        };
+
+        alertCloseBtn.addEventListener('click', () => {
+            alertModal.classList.add('hidden');
+        });
+
+        // Load data from localStorage on app start
+        const loadEntries = () => {
+            try {
+                const entries = JSON.parse(localStorage.getItem('good_things_log')) || [];
+                return entries.map(entry => {
+                    entry.timestamp = new Date(entry.timestamp);
+                    return entry;
+                }).sort((a, b) => b.timestamp - a.timestamp);
+            } catch (error) {
+                console.error("Failed to load entries from localStorage:", error);
+                return [];
+            }
+        };
+
+        const saveEntries = (entries) => {
+            localStorage.setItem('good_things_log', JSON.stringify(entries));
+        };
+
+        const loadGoals = () => {
+            try {
+                return JSON.parse(localStorage.getItem('habit_goals')) || [];
+            } catch (error) {
+                console.error("Failed to load goals from localStorage:", error);
+                return [];
+            }
+        };
+
+        const saveGoals = (goals) => {
+            localStorage.setItem('habit_goals', JSON.stringify(goals));
+        };
+
+        // Add a new entry
+        addEntryBtn.addEventListener('click', () => {
+            const entryText = entryInput.value.trim();
+            const timeStart = timeStartInput.value;
+            const timeEnd = timeEndInput.value;
+
+            if (!entryText) {
+                showAlert("Input Required", "Please enter what you did that felt good.");
+                return;
+            }
+
+            let timeSpent = 0;
+            if (timeStart && timeEnd) {
+                const startDate = new Date(`2000-01-01T${timeStart}:00`);
+                const endDate = new Date(`2000-01-01T${timeEnd}:00`);
+                if (endDate < startDate) {
+                    endDate.setDate(endDate.getDate() + 1); // Account for times crossing midnight
+                }
+                const diffMs = endDate.getTime() - startDate.getTime();
+                timeSpent = Math.floor(diffMs / 60000); // Convert milliseconds to minutes
+            }
+
+            const newEntry = {
+                text: entryText,
+                timeSpent: timeSpent,
+                timestamp: new Date().toISOString()
+            };
+
+            let entries = loadEntries();
+            entries.push(newEntry);
+            saveEntries(entries);
+            renderAll();
+            entryInput.value = '';
+            timeStartInput.value = '';
+            timeEndInput.value = '';
+        });
+
+        // Add a new goal
+        addGoalBtn.addEventListener('click', () => {
+            const goalText = goalInput.value.trim();
+            if (goalText) {
+                let goals = loadGoals();
+                goals.push(goalText);
+                saveGoals(goals);
+                renderGoals();
+                goalInput.value = '';
+            }
+        });
+
+        // Function to render the entry list
+        const renderEntries = (entries) => {
+            entryList.innerHTML = '';
+            if (entries.length === 0) {
+                entryList.innerHTML = '<p class="text-center text-gray-500">No logs yet. Add one above!</p>';
+                return;
+            }
+
+            entries.forEach(entry => {
+                const entryItem = document.createElement('div');
+                entryItem.className = 'entry-item';
+                const date = new Date(entry.timestamp);
+                const timeText = entry.timeSpent > 0 ? `${entry.timeSpent} mins` : '';
+                entryItem.innerHTML = `
+                    <span class="text-gray-800 text-sm font-medium">${entry.text}</span>
+                    <span class="text-gray-400 text-xs">${date.toLocaleDateString()} ${timeText}</span>
+                `;
+                entryList.appendChild(entryItem);
+            });
+        };
+        
+        // Function to render the goals list
+        const renderGoals = () => {
+            const goals = loadGoals();
+            goalsList.innerHTML = '';
+            if (goals.length === 0) {
+                goalsList.innerHTML = '<p class="text-center text-gray-500">No goals set yet.</p>';
+                return;
+            }
+
+            goals.forEach((goal, index) => {
+                const goalItem = document.createElement('div');
+                goalItem.className = 'entry-item';
+                goalItem.innerHTML = `
+                    <span class="text-gray-800 text-sm font-medium">${goal}</span>
+                    <button class="text-gray-400 hover:text-red-500 transition-colors" onclick="deleteGoal(${index})">
+                        &times;
+                    </button>
+                `;
+                goalsList.appendChild(goalItem);
+            });
+        };
+
+        // Function to delete a goal
+        window.deleteGoal = (index) => {
+            let goals = loadGoals();
+            goals.splice(index, 1);
+            saveGoals(goals);
+            renderGoals();
+        };
+
+        // Function to calculate and display insights
+        const renderInsights = () => {
+            const entries = loadEntries();
+            const now = new Date();
+            const startOfThisWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+            
+            let thisWeekCount = 0;
+            let totalTimeThisWeek = 0;
+            const datesWithEntries = new Set();
+            const timeBuckets = { 'Morning (6am-12pm)': 0, 'Afternoon (12pm-6pm)': 0, 'Evening (6pm-12am)': 0, 'Night (12am-6am)': 0 };
+            
+            entries.forEach(entry => {
+                const entryDate = new Date(entry.timestamp);
+                const dateString = entryDate.toISOString().split('T')[0];
+                datesWithEntries.add(dateString);
+
+                // Time-based insight
+                const hour = entryDate.getHours();
+                if (hour >= 6 && hour < 12) timeBuckets['Morning (6am-12pm)']++;
+                else if (hour >= 12 && hour < 18) timeBuckets['Afternoon (12pm-6pm)']++;
+                else if (hour >= 18 && hour < 24) timeBuckets['Evening (6pm-12am)']++;
+                else timeBuckets['Night (12am-6am)']++;
+
+                if (entryDate >= startOfThisWeek) {
+                    thisWeekCount++;
+                    totalTimeThisWeek += (entry.timeSpent || 0);
+                }
+            });
+            
+            const mostProductiveTime = Object.keys(timeBuckets).reduce((a, b) => timeBuckets[a] > timeBuckets[b] ? a : b, Object.keys(timeBuckets)[0]);
+            
+            // Calculate streak
+            let streak = 0;
+            let tempDate = new Date();
+            let isTodayLogged = datesWithEntries.has(tempDate.toISOString().split('T')[0]);
+            
+            if (isTodayLogged) {
+                streak++;
+            }
+            let checkedDate = new Date(tempDate);
+            while (true) {
+                checkedDate.setDate(checkedDate.getDate() - 1);
+                const dateString = checkedDate.toISOString().split('T')[0];
+                if (datesWithEntries.has(dateString)) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+            
+            insightsContent.innerHTML = `
+                <div class="flex flex-col space-y-2 text-gray-700 text-sm">
+                    <p>Current streak: <span class="font-semibold text-lg">${streak} days</span></p>
+                    <p>Total logs this week: <span class="font-semibold text-lg">${thisWeekCount}</span></p>
+                    <p>Total time this week: <span class="font-semibold text-lg">${totalTimeThisWeek} minutes</span></p>
+                    <p>You tend to log "good things" most often in the **${mostProductiveTime}**.</p>
+                </div>
+            `;
+        };
+        
+        const renderAll = () => {
+            renderEntries(loadEntries());
+            renderGoals();
+            renderInsights();
+        };
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            renderAll();
+        });
+    </script>
+</body>
+</html>
